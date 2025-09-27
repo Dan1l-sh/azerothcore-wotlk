@@ -45,11 +45,16 @@ enum Misc
     SPELL_WHIRLWIND_N                   = 50228,
     SPELL_WHIRLWIND_H                   = 50228,
 
+    //Harpooner
+    SPELL_NET                                     = 49092,
+    SPELL_THROW                                   = 49091,
+    SPELL_SUMMON_HARPOON                          = 56789,
+
     SPELL_FREEZING_CLOUD_VISUAL         = 47592,
     SPELL_FREEZING_CLOUD_N              = 47579,
     SPELL_FREEZING_CLOUD_H              = 60020,
 
-    SPELL_LAUNCH_HARPOON                = 48642,
+    SPELL_LAUNCH_HARPOON                = 56570,
 
     // NPCS
     NPC_YMIRJAR_WARRIOR                 = 26690,
@@ -106,6 +111,53 @@ enum phase
     PHASE_FLIGHT,
     PHASE_LAND,
     PHASE_GROUND
+};
+
+class HarpoonerAI : public ScriptedAI
+{
+public:
+    HarpoonerAI(Creature* creature) : ScriptedAI(creature) {}
+
+    uint32 NetTimer;
+    uint32 ThrowTimer;
+
+    void Reset() override
+    {
+        NetTimer = 13 * IN_MILLISECONDS;
+        ThrowTimer = 2 * IN_MILLISECONDS;
+    }
+
+    void UpdateAI(uint32 diff) override
+    {
+        if (!UpdateVictim())
+            return;
+
+        if (NetTimer <= diff)
+        {
+            if (Unit* target = SelectTarget(SelectTargetMethod::MaxDistance, 0, 30, true))
+                DoCast(target, SPELL_NET);
+            NetTimer = 13 * IN_MILLISECONDS;
+        }
+        else
+        {
+            NetTimer -= diff;
+        }
+
+        if (ThrowTimer <= diff)
+        {
+            DoCastVictim(SPELL_THROW);
+            ThrowTimer = 2 * IN_MILLISECONDS;
+        }
+        else
+        {
+            ThrowTimer -= diff;
+        }
+    }
+
+    void JustDied(Unit*  /*pKiller*/) override
+    {
+        DoCast(SPELL_SUMMON_HARPOON);
+    }
 };
 
 class boss_skadi : public CreatureScript
@@ -512,6 +564,13 @@ public:
 
                 if (Creature* grauf = ObjectAccessor::GetCreature(*pPlayer, m_pInstance->GetGuidData(DATA_GRAUF)))
                 {
+                
+                    float damagePercent = 33.0f;
+                    float maxHealth = grauf->GetMaxHealth();
+                    int32 damage = static_cast<int32>(maxHealth * (damagePercent / 100.0f));
+                    grauf->DealDamage(grauf, grauf, damage); 
+                    pPlayer->CastSpell(grauf, SPELL_LAUNCH_HARPOON);
+
                     if (count >= 3)
                     {
                         m_pInstance->SetData(SKADI_IN_RANGE, 0);
@@ -520,15 +579,14 @@ public:
 
                     grauf->AI()->DoAction(ACTION_MYGIRL_ACHIEVEMENT);
                 }
-                go->CastSpell((Unit*)nullptr, SPELL_LAUNCH_HARPOON);
             }
-
         return true;
     }
 };
 
 void AddSC_boss_skadi()
 {
+    RegisterCreatureAI(HarpoonerAI);
     new boss_skadi();
     new boss_skadi_grauf();
     new go_harpoon_canon();
