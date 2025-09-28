@@ -1120,11 +1120,13 @@ public:
                 {
                     if (count < 2)
                     {
+                        me->SetUnitFlag(UNIT_FLAG_IMMUNE_TO_PC);
                         me->CastSpell(me, SABOTEUR_SHIELD_DISRUPTION, false);
                         timer = 1000;
                     }
                     else if (count == 2)
                     {
+                        me->SetUnitFlag(UNIT_FLAG_IMMUNE_TO_PC);
                         me->CastSpell(me, SABOTEUR_SHIELD_DISRUPTION, false);
                         if (pInstance)
                             pInstance->SetData(DATA_RELEASE_BOSS, 0);
@@ -1149,6 +1151,7 @@ public:
             bOpening = true;
             timer = 1000;
             count = 0;
+            me->SetUnitFlag(UNIT_FLAG_IMMUNE_TO_PC);
             me->CastSpell(me, SABOTEUR_SHIELD_DISRUPTION, false);
         }
 
