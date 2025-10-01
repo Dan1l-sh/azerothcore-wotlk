@@ -19,6 +19,8 @@
 #include "ScriptedCreature.h"
 #include "SpellAuras.h"
 #include "SpellScript.h"
+#include "GameObjectScript.h"
+#include "Player.h"
 #include "SpellScriptLoader.h"
 #include "obsidian_sanctum.h"
 
@@ -1334,6 +1336,8 @@ public:
         return GetObsidianSanctumAI<boss_sartharion_vesperonAI>(pCreature);
     }
 
+    // InstanceScript* instance;
+
     struct boss_sartharion_vesperonAI : public boss_sartharion_dragonAI
     {
         boss_sartharion_vesperonAI(Creature* pCreature) : boss_sartharion_dragonAI(pCreature, DATA_VESPERON)
@@ -1617,6 +1621,7 @@ class spell_obsidian_sanctum_flame_tsunami_leap : public SpellScript
         OnEffectHitTarget += SpellEffectFn(spell_obsidian_sanctum_flame_tsunami_leap::HandleLeapBack, EFFECT_0, SPELL_EFFECT_LEAP_BACK);
     }
 };
+
 
 void AddSC_boss_sartharion()
 {

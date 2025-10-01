@@ -33,6 +33,8 @@ enum Data : uint32
     DATA_SHADRON                    = 3,
     MAX_ENCOUNTERS                  = 4,
 
+    DATA_VESPERON_ACOLYTE           = 5,
+
     // Achievements
     DATA_ACHIEVEMENT_DRAGONS_COUNT  = 30,
     DATA_VOLCANO_BLOWS              = 31,
@@ -50,6 +52,7 @@ enum Data : uint32
 
     // Spells
     SPELL_TWILIGHT_SHIFT            = 57620,
+    SPELL_NORMAL_SHIFT              = 61187,
     SPELL_TWILIGHT_TORMENT_SARTHARION = 58835,
 };
 
