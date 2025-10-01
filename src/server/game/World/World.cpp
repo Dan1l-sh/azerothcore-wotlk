@@ -1590,8 +1590,8 @@ void World::_UpdateRealmCharCount(PreparedQueryResult resultCharCount,uint32 acc
 void World::InitWeeklyQuestResetTime()
 {
     Seconds wstime = Seconds(sWorldState->getWorldState(WORLD_STATE_CUSTOM_WEEKLY_QUEST_RESET_TIME));
-    _nextWeeklyQuestReset = wstime > 0s ? wstime : Seconds(Acore::Time::GetNextTimeWithDayAndHour(4, 6));
-
+    _nextWeeklyQuestReset = Seconds(Acore::Time::GetNextTimeWithDayAndHour(5, 4));
+    sWorldState->setWorldState(WORLD_STATE_CUSTOM_WEEKLY_QUEST_RESET_TIME, _nextWeeklyQuestReset.count());
     if (wstime == 0s)
     {
         sWorldState->setWorldState(WORLD_STATE_CUSTOM_WEEKLY_QUEST_RESET_TIME, _nextWeeklyQuestReset.count());
@@ -1613,7 +1613,6 @@ void World::InitMonthlyQuestResetTime()
 {
     Seconds wstime = Seconds(sWorldState->getWorldState(WORLD_STATE_CUSTOM_MONTHLY_QUEST_RESET_TIME));
     _nextMonthlyQuestReset = wstime > 0s ? wstime : Seconds(Acore::Time::GetNextTimeWithDayAndHour(-1, 6));
-
     if (wstime == 0s)
     {
         sWorldState->setWorldState(WORLD_STATE_CUSTOM_MONTHLY_QUEST_RESET_TIME, _nextMonthlyQuestReset.count());
@@ -1699,7 +1698,7 @@ void World::ResetWeeklyQuests()
         if (itr->second->GetPlayer())
             itr->second->GetPlayer()->ResetWeeklyQuestStatus();
 
-    _nextWeeklyQuestReset = Seconds(Acore::Time::GetNextTimeWithDayAndHour(4, 6));
+    _nextWeeklyQuestReset = Seconds(Acore::Time::GetNextTimeWithDayAndHour(5, 4));
     sWorldState->setWorldState(WORLD_STATE_CUSTOM_WEEKLY_QUEST_RESET_TIME, _nextWeeklyQuestReset.count());
 
     // change available weeklies
