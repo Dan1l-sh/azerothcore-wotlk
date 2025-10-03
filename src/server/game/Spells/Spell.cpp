@@ -6588,9 +6588,6 @@ SpellCastResult Spell::CheckCast(bool strict)
                         if (target->IsCreature() && target->ToCreature()->IsVehicle())
                             return SPELL_FAILED_BAD_IMPLICIT_TARGETS;
 
-                        if (target->IsMounted())
-                            return SPELL_FAILED_CANT_BE_CHARMED;
-
                         if (target->GetCharmerGUID())
                             return SPELL_FAILED_CHARMED;
 
@@ -7883,8 +7880,6 @@ bool Spell::CheckEffectTarget(Unit const* target, uint32 eff) const
         case SPELL_AURA_MOD_POSSESS_PET:
         case SPELL_AURA_AOE_CHARM:
             if (target->IsCreature() && target->IsVehicle())
-                return false;
-            if (target->IsMounted())
                 return false;
             if (target->GetCharmerGUID())
                 return false;
