@@ -1019,9 +1019,9 @@ public:
         return GetVioletHoldAI<npc_azure_saboteurAI>(creature);
     }
 
-    struct npc_azure_saboteurAI : public npc_escortAI
+    struct npc_azure_saboteurAI : public ScriptedAI
     {
-        npc_azure_saboteurAI(Creature* c) : npc_escortAI(c)
+        npc_azure_saboteurAI(Creature* c) : ScriptedAI(c)
         {
             pInstance = c->GetInstanceScript();
             uiBoss = 0;
@@ -1038,7 +1038,7 @@ public:
         uint32 timer;
         uint8 count;
 
-        void WaypointReached(uint32 uiWPointId) override
+        void MovementInform(uint32 /*type*/, uint32 uiWPointId) override
         {
             if (!pInstance)
                 return;
@@ -1074,8 +1074,6 @@ public:
 
         void UpdateAI(uint32 diff) override
         {
-            npc_escortAI::UpdateAI(diff);
-
             if (!bAddedWPs)
             {
                 bAddedWPs = true;
@@ -1083,35 +1081,33 @@ public:
                 {
                     case 1:
                         for(int i = 0; i < 3; i++)
-                            AddWaypoint(i, SaboteurFinalPos1[i][0], SaboteurFinalPos1[i][1], SaboteurFinalPos1[i][2], 0);
+                            me->GetMotionMaster()->MovePoint(i, SaboteurFinalPos1[i][0], SaboteurFinalPos1[i][1], SaboteurFinalPos1[i][2]);
                         me->SetHomePosition(SaboteurFinalPos1[2][0], SaboteurFinalPos1[2][1], SaboteurFinalPos1[2][2], 4.762346f);
                         break;
                     case 2:
                         for(int i = 0; i < 3; i++)
-                            AddWaypoint(i, SaboteurFinalPos2[i][0], SaboteurFinalPos2[i][1], SaboteurFinalPos2[i][2], 0);
+                            me->GetMotionMaster()->MovePoint(i, SaboteurFinalPos2[i][0], SaboteurFinalPos2[i][1], SaboteurFinalPos2[i][2]);
                         me->SetHomePosition(SaboteurFinalPos2[2][0], SaboteurFinalPos2[2][1], SaboteurFinalPos2[2][2], 1.862674f);
                         break;
                     case 3:
                         for(int i = 0; i < 2; i++)
-                            AddWaypoint(i, SaboteurFinalPos3[i][0], SaboteurFinalPos3[i][1], SaboteurFinalPos3[i][2], 0);
+                            me->GetMotionMaster()->MovePoint(i, SaboteurFinalPos3[i][0], SaboteurFinalPos3[i][1], SaboteurFinalPos3[i][2], 0);
                         me->SetHomePosition(SaboteurFinalPos3[1][0], SaboteurFinalPos3[1][1], SaboteurFinalPos3[1][2], 5.500638f);
                         break;
                     case 4:
-                        AddWaypoint(0, SaboteurFinalPos4[0], SaboteurFinalPos4[1], SaboteurFinalPos4[2], 0);
+                        me->GetMotionMaster()->MovePoint(0, SaboteurFinalPos4[0], SaboteurFinalPos4[1], SaboteurFinalPos4[2], 0);
                         me->SetHomePosition(SaboteurFinalPos4[0], SaboteurFinalPos4[1], SaboteurFinalPos4[2], 3.991108f);
                         break;
                     case 5:
-                        AddWaypoint(0, SaboteurFinalPos5[0], SaboteurFinalPos5[1], SaboteurFinalPos5[2], 0);
+                        me->GetMotionMaster()->MovePoint(0, SaboteurFinalPos5[0], SaboteurFinalPos5[1], SaboteurFinalPos5[2], 0);
                         me->SetHomePosition(SaboteurFinalPos5[0], SaboteurFinalPos5[1], SaboteurFinalPos5[2], 1.100841f);
                         break;
                     case 6:
                         for(int i = 0; i < 5; i++)
-                            AddWaypoint(i, SaboteurFinalPos6[i][0], SaboteurFinalPos6[i][1], SaboteurFinalPos6[i][2], 0);
+                            me->GetMotionMaster()->MovePoint(i, SaboteurFinalPos6[i][0], SaboteurFinalPos6[i][1], SaboteurFinalPos6[i][2], 0);
                         me->SetHomePosition(SaboteurFinalPos6[4][0], SaboteurFinalPos6[4][1], SaboteurFinalPos6[4][2], 0.983031f);
                         break;
                 }
-                SetDespawnAtEnd(false);
-                Start(true, true);
             }
 
             if (bOpening)
