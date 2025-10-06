@@ -139,6 +139,7 @@ public:
         AURAS,
         SPELLS,
         COOLDOWNS,
+        PET_HEALTH,
 
         MAX
     };
@@ -165,6 +166,11 @@ public:
         stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_PET_SPELL_COOLDOWN);
         stmt->SetData(0, petNumber);
         SetPreparedQuery(COOLDOWNS, stmt);
+
+        stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHAR_PET_HEALTH);
+        stmt->SetData(0, ownerGuid);
+        stmt->SetData(1, petNumber);
+        SetPreparedQuery(PET_HEALTH, stmt);
     }
 };
 
@@ -290,12 +296,11 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petEntry, uint32 petnumber, bool c
         map->AddToMap(ToCreature(), true);
         return true;
     }
-
+    
     if (getPetType() == HUNTER_PET || GetCreatureTemplate()->type == CREATURE_TYPE_DEMON || GetCreatureTemplate()->type == CREATURE_TYPE_UNDEAD)
         GetCharmInfo()->SetPetNumber(petInfo->PetNumber, IsPermanentPetFor(owner)); // Show pet details tab (Shift+P) only for hunter pets, demons or undead
     else
         GetCharmInfo()->SetPetNumber(petInfo->PetNumber, false);
-
     SetDisplayId(petInfo->DisplayId);
     SetNativeDisplayId(petInfo->DisplayId);
     UpdatePositionData();
@@ -328,7 +333,6 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petEntry, uint32 petnumber, bool c
 
     SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, uint32(GameTime::GetGameTime().count())); // cast can't be helped here
     SetCreatorGUID(owner->GetGUID());
-
     InitStatsForLevel(petlevel);
     SetUInt32Value(UNIT_FIELD_PETEXPERIENCE, petInfo->Experience);
 
@@ -368,7 +372,6 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petEntry, uint32 petnumber, bool c
 
         petStable->CurrentPet = std::move(*unslottedPetItr);
         petStable->UnslottedPets.erase(unslottedPetItr);
-
         // old petInfo pointer is no longer valid, refresh it
         petInfo = &petStable->CurrentPet.value();
     }
@@ -382,7 +385,6 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petEntry, uint32 petnumber, bool c
         ASSERT(stabledPet != petStable->StabledPets.end());
 
         std::swap(*stabledPet, petStable->CurrentPet);
-
         // old petInfo pointer is no longer valid, refresh it
         petInfo = &petStable->CurrentPet.value();
     }
@@ -453,6 +455,7 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petEntry, uint32 petnumber, bool c
         if (owner->GetGroup())
             owner->SetGroupUpdateFlag(GROUP_UPDATE_PET);
 
+        uint32 healthFromDb = 0;
         if (getPetType() == HUNTER_PET)
         {
             if (PreparedQueryResult result = holder.GetPreparedResult(PetLoadQueryHolder::DECLINED_NAMES))
@@ -462,9 +465,20 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petEntry, uint32 petnumber, bool c
                 for (uint8 i = 0; i < MAX_DECLINED_NAME_CASES; ++i)
                     m_declinedname->name[i] = fields[i].Get<std::string>();
             }
+
+            if (PreparedQueryResult result = holder.GetPreparedResult(PetLoadQueryHolder::PET_HEALTH))
+            {
+                m_declinedname = std::make_unique<DeclinedName>();
+                Field* fields = result->Fetch();
+                healthFromDb = fields[0].Get<uint32>();
+            }
         }
 
         uint32 curHealth = savedhealth;
+        if (healthFromDb > 0)
+        {
+            curHealth = healthFromDb;
+        }
         if (healthPct)
         {
             curHealth = CountPctFromMaxHealth(healthPct);
@@ -1706,9 +1720,6 @@ void Pet::_SaveAuras(CharacterDatabaseTransaction trans)
             continue;
 
         Aura* aura = itr->second;
-        if (aura->GetDuration() < 60 * IN_MILLISECONDS)
-            continue;
-
         // dont save infinite negative auras! (lavas, transformations etc)
         if (aura->IsPermanent() && !aura->GetSpellInfo()->IsPositive())
             continue;
