@@ -49,7 +49,7 @@ enum Misc
     SPELL_FREEZING_CLOUD_N              = 47579,
     SPELL_FREEZING_CLOUD_H              = 60020,
 
-    SPELL_LAUNCH_HARPOON                = 48642,
+    SPELL_LAUNCH_HARPOON                = 56570,
 
     // NPCS
     NPC_YMIRJAR_WARRIOR                 = 26690,
@@ -401,6 +401,7 @@ public:
                 }
                 else
                     skadi->ToCreature()->AI()->DoAction(ACTION_PHASE2);
+                    skadi->RemoveUnitFlag(UNIT_FLAG_NOT_SELECTABLE);
 
                 skadi->StopMovingOnCurrentPos();
             }
@@ -508,6 +509,12 @@ public:
 
                 if (Creature* grauf = ObjectAccessor::GetCreature(*pPlayer, m_pInstance->GetGuidData(DATA_GRAUF)))
                 {
+                    float damagePercent = 33.0f;
+                    float maxHealth = grauf->GetMaxHealth();
+                    int32 damage = static_cast<int32>(maxHealth * (damagePercent / 100.0f));
+                    pPlayer->DealDamage(grauf, grauf, damage); 
+                    pPlayer->CastSpell(grauf, SPELL_LAUNCH_HARPOON);
+
                     if (count >= 3)
                     {
                         m_pInstance->SetData(SKADI_IN_RANGE, 0);
@@ -516,7 +523,6 @@ public:
 
                     grauf->AI()->DoAction(ACTION_MYGIRL_ACHIEVEMENT);
                 }
-                go->CastSpell((Unit*)nullptr, SPELL_LAUNCH_HARPOON);
             }
 
         return true;
