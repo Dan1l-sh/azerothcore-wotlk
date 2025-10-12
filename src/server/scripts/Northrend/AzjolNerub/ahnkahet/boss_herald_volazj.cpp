@@ -96,12 +96,12 @@ struct boss_volazj : public BossAI
     void InitializeAI() override
     {
         BossAI::InitializeAI();
-        // Visible for all players in insanity
-        me->SetPhaseMask((1 | 16 | 32 | 64 | 128 | 256), true);
     }
 
     void Reset() override
     {
+        // Visible for all players in insanity
+        me->SetPhaseMask((1 | 16 | 32 | 64 | 128 | 256), true);
         _Reset();
         insanityTimes = 0;
         insanityPhase = false;
@@ -214,14 +214,12 @@ struct boss_volazj : public BossAI
         {
             return;
         }
-
         if (insanityPhase)
         {
             if (!CheckPhaseMinions())
             {
                 return;
             }
-
             insanityPhase = false;
             me->RemoveUnitFlag(UNIT_FLAG_NOT_SELECTABLE);
             me->SetControlled(false, UNIT_STATE_STUNNED);
@@ -319,10 +317,18 @@ private:
         }
 
         uint32 phase = 1;
+        uint32 summonPhase = 0;
+        uint32 nextPhase = 0;
         for (ObjectGuid const& summonGUID : summons)
         {
             if (Creature* summon = ObjectAccessor::GetCreature(*me, summonGUID))
             {
+                if (summonPhase != summon->GetPhaseMask() && nextPhase == 0)
+                {
+                    nextPhase = summon->GetPhaseMask() - 1;
+                    summonPhase = summon->GetPhaseMask();
+                }
+                
                 phase |= summon->GetPhaseMask();
             }
         }
@@ -334,6 +340,7 @@ private:
             if (pPlayer && !(pPlayer->GetPhaseMask() & phase))
             {
                 pPlayer->RemoveAurasDueToSpell(GetPlrInsanityAuraId(pPlayer->GetPhaseMask()));
+                pPlayer->CastSpell(pPlayer, GetPlrInsanityAuraId(nextPhase));
             }
         }
 
