@@ -16522,6 +16522,10 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                                     procSpellInfo->HasAttribute(SPELL_ATTR4_REACTIVE_DAMAGE_PROC))
                                     break;
 
+                            // Viscidus Freeze
+                            if (triggeredByAura->GetId() == 25937)
+                                break;
+
                             // chargeable mods are breaking on hit
                             if (useCharges)
                                 takeCharges = true;
