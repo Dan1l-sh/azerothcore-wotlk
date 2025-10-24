@@ -2371,6 +2371,12 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->Effects[EFFECT_0].TriggerSpell = 66064;
     });
 
+    // Maelstorm weapon
+    ApplySpellFix({ 51528, 51529, 51530, 51531, 51532}, [](SpellInfo* spellInfo)
+    {
+        spellInfo->EquippedItemSubClassMask = 173555;
+    });
+
     // Trial of the Crusader, Faction Champions, Priest - Mana Burn
     ApplySpellFix({ 66100 }, [](SpellInfo* spellInfo)
     {
