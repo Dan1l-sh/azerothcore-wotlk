@@ -15,6 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Pet.h"
 #include "Cell.h"
 #include "CellImpl.h"
 #include "CombatAI.h"
@@ -97,9 +98,15 @@ struct npc_pet_dk_ebon_gargoyle : ScriptedAI
     void MySelectNextTarget()
     {
         Unit* owner = me->GetOwner();
-        if (owner && owner->IsPlayer() && (!me->GetVictim() || me->GetVictim()->IsImmunedToSpell(sSpellMgr->GetSpellInfo(SPELL_GARGOYLE_STRIKE)) || !me->IsValidAttackTarget(me->GetVictim()) || !owner->CanSeeOrDetect(me->GetVictim())))
+        // В саму перепроверку таргета добавил условие для поиска нового таргета (На цели нет ауры 49206)
+        if (owner && owner->IsPlayer() && (!me->GetVictim() || me->GetVictim()->IsImmunedToSpell(sSpellMgr->GetSpellInfo(SPELL_GARGOYLE_STRIKE)) || !me->IsValidAttackTarget(me->GetVictim()) || !owner->CanSeeOrDetect(me->GetVictim()) || !me->GetVictim()->HasAura(SPELL_DK_SUMMON_GARGOYLE_1)))
         {
             Unit* selection = owner->ToPlayer()->GetSelectedUnit();
+            
+            // Если существует пет то берем таргет пета, по дефолту берется таргет игрока
+            if (owner->ToPlayer()->GetPet())
+                selection = owner->ToPlayer()->GetPet()->GetVictim();
+            
             if (selection && selection != me->GetVictim() && me->IsValidAttackTarget(selection))
             {
                 me->GetMotionMaster()->Clear(false);
@@ -196,8 +203,12 @@ struct npc_pet_dk_ebon_gargoyle : ScriptedAI
 
             _initialCastTimer += diff;
             _selectionTimer += diff;
-            if (_selectionTimer >= 1000)
-            {
+            if (_selectionTimer >= 1000) // Каждые 2 секунды происходит перепроверка таргета для атаки.
+            {   
+                Unit* owner = me->GetOwner();
+                // Перед перепроверкой таргета удаляем ауру 49206 (цель атаки для гарги) если вурдалак существует, имеет цель и эта цель не совпадает с целью гарги.
+                if ((owner->ToPlayer()->GetPet() && owner->ToPlayer()->GetPet()->GetVictim()) && owner->ToPlayer()->GetPet()->GetVictim() != me->GetVictim())
+                    RemoveTargetAura();
                 MySelectNextTarget();
                 _selectionTimer = 0;
             }
