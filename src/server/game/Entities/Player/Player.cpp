@@ -11834,6 +11834,10 @@ void Player::ApplyEquipCooldown(Item* pItem)
         // xinef: apply hidden cooldown for procs
         if (spellData.SpellTrigger == ITEM_SPELLTRIGGER_ON_EQUIP)
         {
+            // Deathknight PvP gauntlets spell Chains of Ice Frost Rune Refresh
+            if (spellData.SpellId == 62459)
+                continue;
+
             // xinef: uint32(-1) special marker for proc cooldowns
             AddSpellCooldown(spellData.SpellId, uint32(-1), 30 * IN_MILLISECONDS);
             continue;
