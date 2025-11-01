@@ -15,6 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Pet.h"
 #include "Cell.h"
 #include "CellImpl.h"
 #include "CombatAI.h"
@@ -57,7 +58,6 @@ struct npc_pet_dk_ebon_gargoyle : ScriptedAI
     {
         _despawnTimer = 36000; // 30 secs + 4 fly out + 2 initial attack timer
         _despawning = false;
-        _initialSelection = true;
         _targetGUID.Clear();
     }
 
@@ -97,16 +97,39 @@ struct npc_pet_dk_ebon_gargoyle : ScriptedAI
     void MySelectNextTarget()
     {
         Unit* owner = me->GetOwner();
-        if (owner && owner->IsPlayer() && (!me->GetVictim() || me->GetVictim()->IsImmunedToSpell(sSpellMgr->GetSpellInfo(SPELL_GARGOYLE_STRIKE)) || !me->IsValidAttackTarget(me->GetVictim()) || !owner->CanSeeOrDetect(me->GetVictim())))
+        // Запуск поиска новой цели начинается, если нет цели, цель с иммуном к атаке, не валидна, не видна, нет дебафа гаргульи от petattack
+        if (owner && owner->IsPlayer() && (!me->GetVictim() || me->GetVictim()->IsImmunedToSpell(sSpellMgr->GetSpellInfo(SPELL_GARGOYLE_STRIKE)) || !me->IsValidAttackTarget(me->GetVictim()) || !owner->CanSeeOrDetect(me->GetVictim()) || !me->GetVictim()->HasAura(SPELL_DK_SUMMON_GARGOYLE_1, me->GetOwnerGUID())))
         {
-            Unit* selection = owner->ToPlayer()->GetSelectedUnit();
-            if (selection && selection != me->GetVictim() && me->IsValidAttackTarget(selection))
+            // Список целей в радиусе 50м
+            std::list<Unit*> targets;
+            Acore::AnyUnfriendlyUnitInObjectRangeCheck u_check(me, me, 50.0f);
+            Acore::UnitListSearcher<Acore::AnyUnfriendlyUnitInObjectRangeCheck> searcher(me, targets, u_check);
+            Cell::VisitObjects(me, searcher, 50.0f);
+
+            // Атакует цель на которой висит дебаф гаргульи от pettack
             {
-                me->GetMotionMaster()->Clear(false);
-                SetGazeOn(selection);
+                for (auto const& target : targets)
+                {
+                    if (target->HasAura(SPELL_DK_SUMMON_GARGOYLE_1, me->GetOwnerGUID()))
+                    {
+                        me->Attack(target, false);
+                        break;
+                    }
+                }
             }
 
-            else if (!me->GetVictim() || !owner->CanSeeOrDetect(me->GetVictim()))
+            // Если дебафа нет, то атакует случайную цель
+            if (!me->GetVictim())
+            {   
+                for (auto const& target : targets)
+                {
+                    me->Attack(target, false);
+                    break;   
+                }
+            }
+           
+
+            if (!me->GetVictim() || !owner->CanSeeOrDetect(me->GetVictim()))
             {
                 me->CombatStop(true);
                 me->GetMotionMaster()->Clear(false);
@@ -118,16 +141,13 @@ struct npc_pet_dk_ebon_gargoyle : ScriptedAI
 
     void AttackStart(Unit* who) override
     {
-        RemoveTargetAura();
-        _targetGUID = who->GetGUID();
-        me->AddAura(SPELL_DK_SUMMON_GARGOYLE_1, who);
         ScriptedAI::AttackStartCaster(who, 40);
     }
 
     void RemoveTargetAura()
     {
         if (Unit* target = ObjectAccessor::GetUnit(*me, _targetGUID))
-            target->RemoveAura(SPELL_DK_SUMMON_GARGOYLE_1, me->GetGUID());
+            target->RemoveAura(SPELL_DK_SUMMON_GARGOYLE_1, me->GetOwnerGUID());
     }
 
     void Reset() override
@@ -167,23 +187,6 @@ struct npc_pet_dk_ebon_gargoyle : ScriptedAI
 
     void UpdateAI(uint32 diff) override
     {
-        if (_initialSelection)
-        {
-            _initialSelection = false;
-            // Find victim of Summon Gargoyle spell
-            std::list<Unit*> targets;
-            Acore::AnyUnfriendlyUnitInObjectRangeCheck u_check(me, me, 50.0f);
-            Acore::UnitListSearcher<Acore::AnyUnfriendlyUnitInObjectRangeCheck> searcher(me, targets, u_check);
-            Cell::VisitObjects(me, searcher, 50.0f);
-            for (auto const& target : targets)
-                if (target->GetAura(SPELL_DK_SUMMON_GARGOYLE_1, me->GetOwnerGUID()))
-                {
-                    target->RemoveAura(SPELL_DK_SUMMON_GARGOYLE_1, me->GetOwnerGUID());
-                    SetGazeOn(target);
-                    _targetGUID = target->GetGUID();
-                    break;
-                }
-        }
         if (_despawnTimer > 4000)
         {
             _despawnTimer -= diff;
@@ -238,7 +241,6 @@ private:
     uint32 _initialCastTimer;
     int32 _decisionTimer;
     bool _despawning;
-    bool _initialSelection;
 };
 
 struct npc_pet_dk_ghoul : public CombatAI

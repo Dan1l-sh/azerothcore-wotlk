@@ -149,6 +149,8 @@ void WorldSession::HandlePetStopAttack(WorldPackets::Pet::PetStopAttack& packet)
 
 void WorldSession::HandlePetActionHelper(Unit* pet, ObjectGuid guid1, uint32 spellId, uint16 flag, ObjectGuid guid2)
 {
+    const uint32 DkGargoyleSpell = 49206;
+    const uint32 GargoyleEntry = 27829; 
     CharmInfo* charmInfo = pet->GetCharmInfo();
     if (!charmInfo)
     {
@@ -261,6 +263,23 @@ void WorldSession::HandlePetActionHelper(Unit* pet, ObjectGuid guid1, uint32 spe
 
                                 pet->ToCreature()->AI()->AttackStart(TargetUnit);
 
+                                Unit* owner = pet->GetOwner();
+                                // Если хозяин пета дк и призвана гаргулья, то petattack вешает дебаф гаргульи на цель вурдалака и удаляет дебаф с цели гаргульи
+                                if (owner && owner->getClass() && owner->getClass() == 6)
+                                {
+                                    std::list<Creature*> gargoyle;
+                                    pet->GetOwner()->GetAllMinionsByEntry(gargoyle, GargoyleEntry);
+                                    if (!gargoyle.empty() && gargoyle.front()->IsAlive())
+                                    {
+                                        pet->GetOwner()->AddAura(DkGargoyleSpell, TargetUnit);
+
+                                        if (gargoyle.front()->GetVictim() && (pet->GetVictim() != gargoyle.front()->GetVictim()))
+                                        {
+                                            gargoyle.front()->GetVictim()->RemoveAura(DkGargoyleSpell, pet->GetOwnerGUID());
+                                        }
+                                    }
+                                }
+                                    
                                 //10% chance to play special pet attack talk, else growl
                                 if (pet->IsPet() && pet->ToPet()->getPetType() == SUMMON_PET && pet != TargetUnit && roll_chance_i(10))
                                     pet->SendPetActionSound(PET_ACTION_ATTACK);
